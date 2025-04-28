@@ -23,8 +23,9 @@ Answer the question based on the above context: {question}
 
 def main():
     #hierarchical_query("I want to make my company complient on Authentication process, what are the ISM controls I needs to be aware for multi factor authentication . Give only the ISM controls ?")  # Use asyncio.run to call the async function
-    hierarchical_query(" What are the ISM controls applicable for cyber security program ?")  # Use asyncio.run to call the async function
-    ##query_rag("IF I want to dispose the computer, what are the ISM controls i should follow ?") # Use asyncio.run to call the async function
+    question_text = "  what is this ISM-1241 control related ? "
+    hierarchical_query(question_text)  # Use asyncio.run to call the async function
+    query_rag(question_text) # Use asyncio.run to call the async function
 
 
 def query_rag(query_text: str):
@@ -33,7 +34,7 @@ def query_rag(query_text: str):
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
-    results = db.similarity_search_with_score(query_text, k=15)
+    results = db.similarity_search_with_score(query_text, k=5)
 
     # Combine the results into a single context
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
@@ -60,7 +61,7 @@ def query_rag(query_text: str):
         response_text = model.invoke(prompt)
         combined_response += f"Chunk {i + 1} Response:\n{response_text}\n\n"
 
-    print(f"Final Combined Response:\n{combined_response}")
+    print(f"?????????????????????????????????????????????Final Combined Response:\n{combined_response}")
     return combined_response
 
 def hierarchical_query(query_text: str):
@@ -101,7 +102,7 @@ def hierarchical_query(query_text: str):
 
         print("Querying final combined context...")
         final_response = model.invoke(final_prompt)
-        print(f"Final Response:\n{final_response}")
+        print(f" ???????????????????????????????????????????????? Hirarical Final Response:\n{final_response}")
         return final_response
     else:
         # If context fits within the token limit, query directly
@@ -110,7 +111,7 @@ def hierarchical_query(query_text: str):
 
         model = Ollama(model="mistral")
         response_text = model.invoke(prompt)
-        print(f"Response:\n{response_text}")
+        print(f" ???????????????????????????????????????????????? Hirarical Final Response:\n{response_text}")
         return response_text
     
 
