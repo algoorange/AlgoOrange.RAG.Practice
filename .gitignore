@@ -1,0 +1,8 @@
+*.pyc
+.DS_Store
+backup
+chroma
+__pycache__/
+app/__pycache__/
+venv/
+.venv/
