@@ -8,6 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from fastapi import FastAPI, APIRouter
 from pymongo import MongoClient
+import json
 
 app = FastAPI()
 chatRouter = APIRouter()
@@ -42,7 +43,10 @@ async def extract_key_word_for_each_ism_control_update_in_ism_collection_back():
         controlid = document.get("control_id", "No Title")
         intent = document.get("intent", "No intent")
         purpose = document.get("purpose", "No Title")
- 
+        keywords = document.get("keywords", "No Title")
+        if keywords != "" and len(keywords) > 0:
+            print(f"Keywords already exist for control_id {controlid}. Skipping...")
+            continue
 
         prompt = f"""
                 I want you to act as a compliance expert. I will provide you with the purpose, intent, and compliance action required for a specific Information Security Manual (ISM) control.
@@ -79,6 +83,7 @@ async def query_documents(request: QueryRequest):
     response = query_rag(query_text)  # Use asyncio.run to call the async function
     return {"response": response}
 
+@chatRouter.post("/query2")
 def handle_query(query_text: str):
     # Retrive all the documents in E8 Collection from Mongo DB
     client = MongoClient("mongodb://localhost:27017/")
@@ -104,44 +109,58 @@ def handle_query(query_text: str):
         if len(client_Policy_Document) > 5000:
             client_Policy_Document = client_Policy_Document[:5000]
  
-        PROMPT_TEMPLATE = """
-        You are a highly experienced **Information Security compliance expert** with deep knowledge of the Australian ISM framework.
+        PROMPT_TEMPLATE = f"""
+            You are a highly experienced **Information Security compliance expert** with deep knowledge of the Australian ISM framework.
 
-        Your task is to perform a **compliance check** by comparing the client's security policy document against a specific **action requirement** from an ISM control.
+            Your task is to perform a **compliance check** by comparing the client's security policy document against a specific **action requirement** from an ISM control.
 
-        ---
+            ---
 
-        **Client Policy Document Content**:
-        {client_Policy_Document}
+            **Client Policy Document Content**:
+            {client_Policy_Document}
 
-        **Action Required by ISM Control**:
-        {actionneeded}
+            **Action Required by ISM Control**:
+            {actionneeded}
 
-        ---
+            ---
 
-        Please analyze whether the client's policy satisfies the **action required** as described in the ISM control.
+            Please analyze whether the client's policy satisfies the **action required** as described in the ISM control.
 
-        ### Return one of the following:
-        - "✅ Compliant" — if the policy explicitly meets or clearly satisfies the action needed.
-        - "❌ Not Compliant" — if the policy does not meet the requirement, is vague, or lacks key elements.
+            ### Return one of the following:
+            - "✅ Compliant" — if the policy explicitly meets or clearly satisfies the action needed.
+            - "❌ Not Compliant" — if the policy does not meet the requirement, is vague, or lacks key elements.
 
-        If **Not Compliant**, briefly explain:
-        - What specific requirement is missing or insufficient?
-        - What should be added or improved to achieve compliance?
+            If **Not Compliant**, briefly explain the recommendations for improvement.:
+            - What specific requirement is missing or insufficient?
+            - What should be added or improved to achieve compliance?
 
-        Return response in JSON format with the following
-        fields:
-            - "compliance_status": "✅ Compliant" or "❌ Not Compliant"
-            - "explanation": "Your explanation here" (if not compliant)
-            - "recommendations": "Your recommendations here" (if not compliant)
-        
+            ---
+
+            ✅ Return the response **as raw JSON only** with the exact structure below. Include only the required fields and values, without any additional text or formatting.
+            ❌ Do NOT include any explanations or markdown formatting like triple backticks (```).
+
+            Expected JSON format:
+            {{
+            "compliance_status": "✅ Compliant" or "❌ Not Compliant",
+            "recommendations": "Your recommendations here"
+            }}
         """
 
         model = Ollama(model="llama3.1:8b")
         response_text = model.invoke(PROMPT_TEMPLATE)
+        data = json.loads(response_text)
+        compleience_Status = data.get("compliance_status", "No compliance status provided")
+        recommendations = data.get("recommendations", "No recommendations provided")
+        print(f"Response for control_id {document['control_id']}: {response_text}")
+        insert_update_e8_complience_details(
+            document["control_id"],
+            compleience_Status,
+            recommendations
+        )
 
 
-def insert_update_e8_complience_details(ismControlName, complianceStatus, explanation, recommendations):
+
+def insert_update_e8_complience_details(ismControlName, complianceStatus, recommendations):
     client = MongoClient("mongodb://localhost:27017/")
     mongo_db = client["algo_compliance_db"]
     collection = mongo_db["e8_ism_controls_compliance_details"]
@@ -150,7 +169,6 @@ def insert_update_e8_complience_details(ismControlName, complianceStatus, explan
     new_document = {
         "ismControlName": ismControlName,
         "complianceStatus": complianceStatus,
-        "explanation": explanation,
         "recommendations": recommendations,
     }
 

@@ -27,28 +27,28 @@ DATA_PATH = "./DATA"
 
 @uploadRouter.post("/upload")
 async def upload_documents(files: list[UploadFile]):
-    file_ids_map = {}
+    # file_ids_map = {}
 
-    for file in files:
-        file_content = await file.read()
-        filename = file.filename
-        file_id = f"{filename}:{uuid.uuid4().hex[:8]}"
-        file_ids_map[filename] = file_id
+    # for file in files:
+    #     file_content = await file.read()
+    #     filename = file.filename
+    #     file_id = f"{filename}:{uuid.uuid4().hex[:8]}"
+    #     file_ids_map[filename] = file_id
 
-        # Insert into MongoDB
-        file_doc = {
-            "file_id": file_id,
-            "filename": filename,
-            "upload_time": datetime.utcnow(),
-            "file_data": Binary(file_content),
-        }
-        file_collection.insert_one(file_doc)
+    #     # Insert into MongoDB
+    #     file_doc = {
+    #         "file_id": file_id,
+    #         "filename": filename,
+    #         "upload_time": datetime.utcnow(),
+    #         "file_data": Binary(file_content),
+    #     }
+    #     file_collection.insert_one(file_doc)
 
-    os.makedirs(DATA_PATH, exist_ok=True)
-    for file in files:
-        file_path = os.path.join(DATA_PATH, file.filename)
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
+    # os.makedirs(DATA_PATH, exist_ok=True)
+    # for file in files:
+    #     file_path = os.path.join(DATA_PATH, file.filename)
+    #     with open(file_path, "wb") as f:
+    #         f.write(await file.read())
     # Check if the database should be cleared (using the --clear flag).
     # parser = argparse.ArgumentParser()
     # parser.add_argument("--reset", action="store_true", help="Reset the database.")
@@ -64,7 +64,7 @@ async def upload_documents(files: list[UploadFile]):
     # Create (or update) the data store.
     documents = load_documents()
     chunks = split_documents(documents)
-    chunks = add_file_ids_to_chunks(chunks, file_ids_map)
+    chunks = add_file_ids_to_chunks(chunks, "file_ids_map")
 
     for chunk in chunks:
         chunk.metadata = clean_metadata(chunk.metadata)
@@ -106,10 +106,10 @@ def split_documents(documents: list[Document]):
 def add_file_ids_to_chunks(chunks: list[Document], file_ids_map: dict):
     for chunk in chunks:
         source_path = chunk.metadata.get("source", "")
-        filename = os.path.basename(source_path)
-        file_id = file_ids_map.get(filename, os.path.splitext(filename)[0])
-        chunk.metadata["file_id"] = file_id
-        chunk.metadata["id"] = file_id
+        # filename = os.path.basename(source_path)
+        # file_id = file_ids_map.get(filename, os.path.splitext(filename)[0])
+        chunk.metadata["file_id"] = "test_file_id" + str(uuid.uuid4())
+        chunk.metadata["id"] = "id_"+str(uuid.uuid4())  # Generate a unique ID for each chunk
     return calculate_chunk_ids(chunks)
 
 
