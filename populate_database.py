@@ -9,7 +9,7 @@ from langchain.vectorstores.chroma import Chroma
 
 
 CHROMA_PATH = "chroma"
-DATA_PATH = "data"
+DATA_PATH = "./manoj-RAG/AlgoOrange.RAG.Practice/data"
 
 
 def main():
@@ -66,7 +66,7 @@ def add_to_chroma(chunks: list[Document]):
     if len(new_chunks):
         print(f"👉 Adding new documents: {len(new_chunks)}")
         for i in range(0, len(new_chunks), 50):  # Process in batches of 50
-            batch = new_chunks[i:i + 50]
+            batch = new_chunks[i : i + 50]
             batch_ids = [chunk.metadata["id"] for chunk in batch]
             db.add_documents(batch, ids=batch_ids)
             print(f"✅ Added batch {i // 50 + 1} with {len(batch)} documents")

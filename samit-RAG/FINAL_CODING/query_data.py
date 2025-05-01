@@ -1,10 +1,15 @@
 import argparse
+from groq import BaseModel
 from langchain.vectorstores.chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
-
-from get_embedding_function import get_embedding_function
+from FINAL_CODING.get_embedding_function import get_embedding_function
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from fastapi import FastAPI, APIRouter
+
+app = FastAPI()
+chatRouter = APIRouter()
 
 MAX_TOKENS = 4000  # Define the maximum token limit for the model
 
@@ -21,13 +26,18 @@ Answer the question based on the above context: {question}
 """
 
 
-def main():
+class QueryRequest(BaseModel):
+    query_text: str
+
+
+@chatRouter.post("/query")
+async def query_documents(request: QueryRequest):
+    query_text = request.query_text
     # hierarchical_query("I want to make my company complient on Authentication process, what are the ISM controls I needs to be aware for multi factor authentication . Give only the ISM controls ?")  # Use asyncio.run to call the async function
-    question_text = (
-        "what are the ism controls comes under Protecting systems and their resources ?"
-    )
-    hierarchical_query(question_text)  # Use asyncio.run to call the async function
-    query_rag(question_text)  # Use asyncio.run to call the async function
+    # question_text = "what are the ism controls comes under Providing cybersecurity leadership and guidance ?"
+    # hierarchical_query(query_text)  # Use asyncio.run to call the async function
+    response = query_rag(query_text)  # Use asyncio.run to call the async function
+    return {"response": response}
 
 
 def query_rag(query_text: str):
@@ -37,6 +47,7 @@ def query_rag(query_text: str):
 
     # Search the DB.
     results = db.similarity_search_with_score(query_text, k=5)
+    print(results)
 
     # Combine the results into a single context
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
@@ -126,7 +137,3 @@ def hierarchical_query(query_text: str):
             f" ???????????????????????????????????????????????? Hirarical Final Response:\n{response_text}"
         )
         return response_text
-
-
-if __name__ == "__main__":
-    main()
