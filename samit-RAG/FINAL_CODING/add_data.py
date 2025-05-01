@@ -5,14 +5,14 @@ import shutil
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from FINAL_CODING.get_embedding_function import get_embedding_function
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.vectorstores.chroma import Chroma
 from langchain_community.document_loaders import UnstructuredPDFLoader
 import uuid
 from bson.binary import Binary
 from pymongo import MongoClient
 from datetime import datetime
 from fastapi import FastAPI, APIRouter, UploadFile
-from langchain.document_loaders.pdf import PyPDFDirectoryLoader
+from langchain_community.document_loaders.pdf import PyPDFDirectoryLoader
 
 client = MongoClient("mongodb://localhost:27017/")
 mongo_db = client["IRAP_DB"]
